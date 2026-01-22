@@ -1,1 +1,157 @@
+// Quest routes - handles quest listing and management
+const express = require("express");
+const router = express.Router();
 
+// Mock quest database
+const quests = [
+  {
+    id: 1,
+    name: "Stake Your Tokens",
+    description: "Stake a minimum of 100 tokens in the DeFi protocol",
+    rewardAmount: 500,
+    rewardTiers: ["Bronze", "Silver", "Gold"],
+    maxCompletions: 1000,
+    completions: 342,
+    active: true,
+    createdAt: new Date("2024-01-01"),
+    requirements: {
+      verificationMethod: "staking",
+      minimumAmount: 100,
+      minimumDuration: 604800, // 7 days in seconds
+    },
+  },
+  {
+    id: 2,
+    name: "Provide Liquidity",
+    description: "Provide liquidity to any supported trading pair",
+    rewardAmount: 750,
+    rewardTiers: ["Bronze", "Silver", "Gold"],
+    maxCompletions: 500,
+    completions: 218,
+    active: true,
+    createdAt: new Date("2024-01-05"),
+    requirements: {
+      verificationMethod: "liquidity",
+      minimumAmount: 1000,
+      minimumDuration: 86400, // 1 day
+    },
+  },
+  {
+    id: 3,
+    name: "Execute Multi-Step Swap",
+    description: "Execute a complex swap route involving 3+ assets",
+    rewardAmount: 300,
+    rewardTiers: ["Bronze", "Silver"],
+    maxCompletions: 2000,
+    completions: 1234,
+    active: true,
+    createdAt: new Date("2024-01-10"),
+    requirements: {
+      verificationMethod: "swap",
+      minimumAmount: 0,
+      minimumDuration: 0,
+    },
+  },
+  {
+    id: 4,
+    name: "Governance Participation",
+    description: "Vote on governance proposals and earn rewards",
+    rewardAmount: 200,
+    rewardTiers: ["Bronze"],
+    maxCompletions: 5000,
+    completions: 342,
+    active: true,
+    createdAt: new Date("2024-01-15"),
+    requirements: {
+      verificationMethod: "governance",
+      minimumAmount: 0,
+      minimumDuration: 0,
+    },
+  },
+];
+
+/**
+ * GET /api/quests - List all available quests
+ */
+router.get("/", (req, res) => {
+  try {
+    const { active } = req.query;
+
+    let filteredQuests = quests;
+    if (active === "true") {
+      filteredQuests = quests.filter((q) => q.active);
+    }
+
+    res.json({
+      success: true,
+      data: filteredQuests,
+      count: filteredQuests.length,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/quests/:id - Get specific quest details
+ */
+router.get("/:id", (req, res) => {
+  try {
+    const { id } = req.params;
+    const quest = quests.find((q) => q.id === parseInt(id));
+
+    if (!quest) {
+      return res.status(404).json({
+        success: false,
+        error: "Quest not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: quest,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/quests/category/:category - Get quests by category
+ */
+router.get("/category/:category", (req, res) => {
+  try {
+    const { category } = req.params;
+    const filteredQuests = quests.filter(
+      (q) =>
+        q.requirements.verificationMethod.toLowerCase() ===
+        category.toLowerCase()
+    );
+
+    if (filteredQuests.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "No quests found in this category",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: filteredQuests,
+      count: filteredQuests.length,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+module.exports = router;
