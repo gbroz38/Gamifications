@@ -1,1 +1,22 @@
-
+{
+  "name": "hedera-quest-contracts",
+  "version": "1.0.0",
+  "description": "Smart contracts for Hedera DeFi gamification",
+  "main": "index.js",
+  "scripts": {
+    "compile": "hardhat compile",
+    "deploy": "hardhat run scripts/deploy.js --network hedera-testnet",
+    "test": "hardhat test",
+    "verify": "hardhat verify"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "hardhat": "^2.19.0",
+    "ethers": "^6.9.0",
+    "@openzeppelin/hardhat-upgrades": "^2.0.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.0",
+    "hardhat-gas-reporter": "^1.0.9"
+  }
+}
