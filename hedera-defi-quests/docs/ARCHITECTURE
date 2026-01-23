@@ -1,1 +1,277 @@
+# Architecture Overview
 
+## System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     User / Frontend Browser                  │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                   HashPack Wallet Integration
+                            │
+┌─────────────────────────────────────────────────────────────┐
+│                    React Frontend (Port 3000)                │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
+│  │  Dashboard   │  │    Profile   │  │ Leaderboard  │       │
+│  └──────────────┘  └──────────────┘  └──────────────┘       │
+│         │                 │                  │               │
+│         └─────────────────┴──────────────────┘               │
+│                           │                                  │
+│                    API Client (Axios)                        │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                  REST API (http://localhost:5000)
+                            │
+┌─────────────────────────────────────────────────────────────┐
+│                 Node.js Backend (Express)                    │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │                   API Routes                         │   │
+│  │  ┌──────────────┐  ┌──────────────┐                 │   │
+│  │  │   /quests    │  │    /users    │ /verification   │   │
+│  │  └──────────────┘  └──────────────┘                 │   │
+│  └──────────────────────────────────────────────────────┘   │
+│                           │                                  │
+│              Ethers.js / Hedera SDK                          │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                  Hedera Network (RPC)
+                            │
+┌─────────────────────────────────────────────────────────────┐
+│              Hedera Smart Contracts                          │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │ QuestToken   │  │  QuestNFT    │  │QuestManager  │      │
+│  │   (HQT)      │  │ (Badges)     │  │ (Orchestrate)│      │
+│  └──────────────┘  └──────────────┘  └──────────────┘      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Component Details
+
+### Frontend Layer (React)
+- **Technology**: React 18, React Router
+- **Styling**: CSS3, Responsive Design
+- **State Management**: React Hooks, Zustand
+- **API Communication**: Axios
+
+**Components**:
+- Navigation bar with wallet connection
+- Quest discovery dashboard
+- User profile with statistics
+- Leaderboard rankings
+- Quest detail pages
+
+### Backend Layer (Node.js)
+- **Framework**: Express.js
+- **Port**: 5000 (configurable)
+- **Routes**:
+  - `/api/quests` - Quest management
+  - `/api/users` - User progress tracking
+  - `/api/verify` - Quest verification
+
+**Features**:
+- RESTful API design
+- Input validation
+- CORS enabled
+- Error handling middleware
+
+### Smart Contract Layer (Hedera)
+- **Language**: Solidity 0.8.20
+- **Framework**: Hardhat
+- **Network**: Hedera Testnet/Mainnet
+
+**Contracts**:
+1. **QuestToken (HQT)**
+   - ERC20 standard implementation
+   - Authorized minting only
+   - Supply cap: 1 billion
+   - Emergency pause functionality
+
+2. **QuestNFT**
+   - ERC721 implementation
+   - Non-transferable achievements
+   - Quest completion tracking
+   - Tier-based variants
+
+3. **QuestManager**
+   - Quest creation and management
+   - Reward distribution
+   - Verification orchestration
+   - Reentrancy protection
+
+## Data Flow
+
+### Quest Completion Flow
+
+```
+1. User performs DeFi action (stake, provide liquidity, etc.)
+   ↓
+2. User submits quest completion on frontend
+   ↓
+3. Frontend sends verification request to backend
+   ↓
+4. Backend validates transaction on-chain
+   ↓
+5. Backend calls smart contract to claim reward
+   ↓
+6. Smart contract:
+   a) Mints reward tokens (HQT)
+   b) Mints achievement NFT
+   c) Updates user statistics
+   ↓
+7. Frontend receives confirmation
+   ↓
+8. User sees updated rewards and badges
+```
+
+### User Data Flow
+
+```
+Frontend User Request
+   ↓
+Express API Route Handler
+   ↓
+Request Validation
+   ↓
+Smart Contract Query (ethers.js)
+   ↓
+Hedera Network Response
+   ↓
+Format Response
+   ↓
+Send to Frontend
+   ↓
+Update UI
+```
+
+## State Management
+
+### Frontend State
+- **Wallet Connection**: Connected/Disconnected + Address
+- **Quest Data**: List of available quests
+- **User Progress**: Completed quests, rewards earned
+- **UI State**: Loading, error states, filters
+
+### Smart Contract State
+- **Quest Registry**: Mapping of quest ID to quest data
+- **User Tracking**: Quest completion status per user
+- **Reward Totals**: Total rewards earned per user
+- **Token Supply**: Minted and remaining tokens
+
+## Database Considerations
+
+Current implementation uses in-memory data. For production:
+
+```
+Recommended Database: MongoDB/PostgreSQL
+├── Users Collection
+│   ├── address (indexed)
+│   ├── completedQuests
+│   ├── totalRewards
+│   └── badges
+├── Quests Collection
+│   ├── id (indexed)
+│   ├── name, description
+│   ├── rewards, requirements
+│   └── status
+└── Transactions Collection
+    ├── userId (indexed)
+    ├── questId (indexed)
+    ├── transactionHash
+    └── timestamp
+```
+
+## Security Architecture
+
+```
+┌──────────────────────────────────────┐
+│      User Input Validation           │
+│  (Frontend + Backend)                │
+└──────────────────────────────────────┘
+              │
+┌──────────────────────────────────────┐
+│    Authentication/Authorization      │
+│  (Wallet Signature)                  │
+└──────────────────────────────────────┘
+              │
+┌──────────────────────────────────────┐
+│    Rate Limiting & DDoS Protection   │
+│  (Express Middleware)                │
+└──────────────────────────────────────┘
+              │
+┌──────────────────────────────────────┐
+│    Smart Contract Security           │
+│  - Reentrancy Guards                 │
+│  - Overflow Protection               │
+│  - Access Control                    │
+└──────────────────────────────────────┘
+```
+
+## Deployment Architecture
+
+### Local Development
+```
+localhost:3000 (Frontend)
+localhost:5000 (Backend API)
+Hedera Testnet
+```
+
+### Production
+```
+CloudFlare / CDN (Frontend)
+AWS/Heroku (Backend API)
+Hedera Mainnet
+MongoDB Atlas (Database)
+```
+
+## Performance Considerations
+
+1. **Frontend**:
+   - Lazy loading of quest cards
+   - Memoized React components
+   - Optimized re-renders
+
+2. **Backend**:
+   - Request caching
+   - Database query optimization
+   - Connection pooling
+
+3. **Smart Contracts**:
+   - Optimized gas usage
+   - Batch operations where possible
+   - Efficient storage patterns
+
+## Scalability Plan
+
+```
+Phase 1 (MVP):
+- Single backend instance
+- MongoDB for persistence
+- Hedera testnet
+
+Phase 2 (Growth):
+- Load balancing
+- Redis caching
+- Hedera mainnet
+
+Phase 3 (Scale):
+- Microservices architecture
+- Database sharding
+- Multiple regions
+- Off-chain verification oracle
+```
+
+## Testing Strategy
+
+```
+Frontend:
+└── Jest + React Testing Library
+
+Backend:
+├── Unit Tests (Jest)
+├── Integration Tests
+└── API Tests (Supertest)
+
+Smart Contracts:
+├── Unit Tests (Hardhat)
+├── Integration Tests
+└── Security Audits
